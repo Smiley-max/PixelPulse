@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PixelPulse</title>
+  <style>
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(20, 20px);
+      grid-template-rows: repeat(20, 20px);
+      gap: 2px;
+      position: relative;
+    }
+
+    .square {
+      width: 20px;
+      height: 20px;
+      background-color: white;
+      border: 1px solid #ccc;
+    }
+
+    .green {
+      background-color: green;
+    }
+
+    .yellow {
+      background-color: yellow;
+    }
+
+    .blue {
+      background-color: blue;
+    }
+
+    .pink {
+      background-color: pink;
+    }
+
+    .red {
+      background-color: red;
+    }
+
+    .orange {
+      background-color: orange;
+    }
+
+    .brown {
+      background-color: brown;
+    }
+
+    body {
+      background-color: #222;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid" id="grid"></div>
+
+  <script>
+    const grid = document.getElementById('grid');
+    const totalSquares = 400;
+    const rows = 20;
+    let direction = 1; // Start with moving to the right
+    let currentPosition = 189; // Starting position of the green square (middle)
+    const squares = [];
+    let pinkCount = 0; // Counter for pink squares
+    let allWhiteGone = false; // Flag to track if all white squares are gone
+    let stopGame = false; // Flag to stop the game
+
+    // Create the grid
+    for (let i = 0; i < totalSquares; i++) {
+      const square = document.createElement('div');
+      square.classList.add('square');
+      if (i === currentPosition) {
+        square.classList.add('green');
+      } else if (i % 6 === 0) {
+        square.classList.add('yellow');
+      }
+      squares.push(square);
+      grid.appendChild(square);
+    }
+
+    // Function to move the green square
+    function moveGreenSquare() {
+      if (stopGame) return; // Stop if the game is stopped
+
+      // Remove the current green square
+      squares[currentPosition].classList.remove('green');
+
+      // Move the green square
+      currentPosition += direction;
+
+      // Check if it hits a boundary
+      if (currentPosition < 0 || currentPosition >= totalSquares) {
+        direction *= -1; // Reverse direction if out of bounds
+        currentPosition += direction; // Adjust to stay within bounds
+      }
+
+      // Check for yellow square
+      if (squares[currentPosition].classList.contains('yellow')) {
+        squares[currentPosition].classList.remove('yellow');
+        squares[currentPosition].classList.add('blue');
+        direction = -20; // Move up when hitting yellow
+      } else if (squares[currentPosition].classList.contains('blue')) {
+        squares[currentPosition].classList.remove('blue');
+        squares[currentPosition].classList.add('yellow');
+        direction = 20; // Move down when hitting blue
+      }
+
+      // 1/4 chance to make a square pink
+      if (Math.random() < 0.25 && !allWhiteGone) {
+        let randomIndex = Math.floor(Math.random() * totalSquares);
+        if (!squares[randomIndex].classList.contains('green') && 
+            !squares[randomIndex].classList.contains('yellow') && 
+            !squares[randomIndex].classList.contains('blue') && 
+            !squares[randomIndex].classList.contains('pink') && 
+            !squares[randomIndex].classList.contains('red') && 
+            !squares[randomIndex].classList.contains('orange') && 
+            !squares[randomIndex].classList.contains('brown')) {
+          squares[randomIndex].classList.add('pink');
+          pinkCount++;
+        }
+      }
+
+      // If there are 10 pink squares, create a red square
+      if (pinkCount >= 10) {
+        let randomIndex = Math.floor(Math.random() * totalSquares);
+        if (!squares[randomIndex].classList.contains('green') && 
+            !squares[randomIndex].classList.contains('yellow') && 
+            !squares[randomIndex].classList.contains('blue') && 
+            !squares[randomIndex].classList.contains('pink') && 
+            !squares[randomIndex].classList.contains('red')) {
+          squares[randomIndex].classList.add('red');
+          pinkCount = 0; // Reset pink counter after creating red square
+        }
+      }
+
+      // Check if the square is pink (teleport to a random square)
+      if (squares[currentPosition].classList.contains('pink')) {
+        currentPosition = Math.floor(Math.random() * totalSquares);
+        // Ensure the new position is valid
+        while (squares[currentPosition].classList.contains('pink') || 
+               squares[currentPosition].classList.contains('green')) {
+          currentPosition = Math.floor(Math.random() * totalSquares);
+        }
+      }
+
+      // Check if the square is red (same behavior as pink, but create orange around it)
+      if (squares[currentPosition].classList.contains('red')) {
+        // Change adjacent squares to orange
+        let neighbors = [
+          currentPosition - 1, currentPosition + 1, currentPosition - rows, currentPosition + rows
+        ];
+
+        neighbors.forEach(index => {
+          if (index >= 0 && index < totalSquares && !squares[index].classList.contains('green') && 
+              !squares[index].classList.contains('yellow') && 
+              !squares[index].classList.contains('blue') && 
+              !squares[index].classList.contains('pink') && 
+              !squares[index].classList.contains('red') && 
+              !squares[index].classList.contains('orange')) {
+            squares[index].classList.add('orange');
+          }
+        });
+
+        // Teleport the green square to a random position
+        currentPosition = Math.floor(Math.random() * totalSquares);
+        // Ensure the new position is valid
+        while (squares[currentPosition].classList.contains('pink') || 
+               squares[currentPosition].classList.contains('green') || 
+               squares[currentPosition].classList.contains('red')) {
+          currentPosition = Math.floor(Math.random() * totalSquares);
+        }
+      }
+
+      // Update the position of the green square
+      squares[currentPosition].classList.add('green');
+    }
+
+    // Move the green square every 100ms
+    const moveInterval = setInterval(moveGreenSquare, 100);
+
+    // Timer to change all white squares to brown after 5 minutes (300,000 ms)
+    setTimeout(() => {
+      let allWhite = true;
+      for (let i = 0; i < totalSquares; i++) {
+        if (!squares[i].classList.contains('green') && 
+            !squares[i].classList.contains('yellow') && 
+            !squares[i].classList.contains('blue') && 
+            !squares[i].classList.contains('pink') && 
+            !squares[i].classList.contains('red') && 
+            !squares[i].classList.contains('orange')) {
+          squares[i].classList.add('brown');
+        } else {
+          allWhite = false;
+        }
+      }
+      // Stop the game if all white squares are gone
+      if (allWhite) {
+        allWhiteGone = true;
+        clearInterval(moveInterval); // Stop the green square movement
+        stopGame = true; // Stop the game
+      }
+    }, 300000); // 5 minutes = 300,000 ms
+  </script>
+</body>
+</html>
